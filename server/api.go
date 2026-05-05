@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"mysh/config"
-	"mysh/connection"
-	"mysh/executor"
-	"mysh/metadata"
+	"github.com/eyjian/mysh/config"
+	"github.com/eyjian/mysh/connection"
+	"github.com/eyjian/mysh/executor"
+	"github.com/eyjian/mysh/metadata"
 )
 
 // --- JSON request/response types ---

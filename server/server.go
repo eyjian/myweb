@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"mysh/config"
-	"mysh/connection"
-	"mysh/executor"
-	"mysh/metadata"
+	"github.com/eyjian/mysh/config"
+	"github.com/eyjian/mysh/connection"
+	"github.com/eyjian/mysh/executor"
+	"github.com/eyjian/mysh/metadata"
 )
 
 // Config holds server configuration.

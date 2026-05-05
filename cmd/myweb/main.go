@@ -7,10 +7,10 @@ import (
 	"os/exec"
 	"runtime"
 
-	"mysh/config"
-	"mysh/connection"
-	"mysh/executor"
-	"mysh/metadata"
+	"github.com/eyjian/mysh/config"
+	"github.com/eyjian/mysh/connection"
+	"github.com/eyjian/mysh/executor"
+	"github.com/eyjian/mysh/metadata"
 
 	myweb "github.com/eyjian/myweb"
 	"github.com/eyjian/myweb/server"
