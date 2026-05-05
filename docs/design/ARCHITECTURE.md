@@ -53,19 +53,19 @@ myweb/
 │   ├── ws.go             # WebSocket 处理器
 │   └── middleware.go     # CORS、日志、恢复
 ├── ui/
-│   ├── src/              # React 前端源码
-│   │   ├── App.tsx
+│   ├── src/              # Vue 3 前端源码
+│   │   ├── App.vue
 │   │   ├── components/
-│   │   │   ├── SqlEditor.tsx      # CodeMirror 6 封装
-│   │   │   ├── ResultTable.tsx    # 虚拟滚动结果表格
-│   │   │   ├── Sidebar.tsx        # 数据库/表/列浏览器
-│   │   │   ├── ConnectDialog.tsx  # 连接对话框
-│   │   │   ├── HistoryPanel.tsx   # 查询历史面板
-│   │   │   └── StatusBar.tsx      # 连接信息 + 格式切换
-│   │   ├── hooks/
+│   │   │   ├── SqlEditor.vue      # CodeMirror 6 封装
+│   │   │   ├── ResultTable.vue    # 虚拟滚动结果表格
+│   │   │   ├── Sidebar.vue        # 数据库/表/列浏览器
+│   │   │   ├── ConnectDialog.vue  # 连接对话框
+│   │   │   ├── HistoryPanel.vue   # 查询历史面板
+│   │   │   └── StatusBar.vue      # 连接信息 + 格式切换
+│   │   ├── composables/
 │   │   │   ├── useWebSocket.ts    # WebSocket 连接管理
 │   │   │   └── useApi.ts          # REST API 辅助
-│   │   └── index.tsx
+│   │   └── main.ts
 │   ├── dist/             # 构建产物 (go:embed 目标)
 │   ├── package.json
 │   ├── tsconfig.json
@@ -152,11 +152,11 @@ var staticFiles embed.FS
 
 | 库 | 用途 |
 |----|------|
-| React 19 | UI 框架 |
+| Vue 3 | UI 框架（Composition API + `<script setup>`） |
 | TypeScript | 类型安全 |
-| Vite | 构建工具（开发时快速 HMR） |
-| CodeMirror 6 | SQL 编辑器，使用 `@codemirror/lang-sql` |
-| @tanstack/react-table | 虚拟滚动结果表格 |
+| Vite | 构建工具（开发时快速 HMR，原生 Vue 支持） |
+| CodeMirror 6 | SQL 编辑器，使用 `vue-codemirror` + `@codemirror/lang-sql` |
+| @tanstack/vue-table | 虚拟滚动结果表格 |
 | Tailwind CSS | 样式 |
 
 ### 页面布局
@@ -222,7 +222,7 @@ var staticFiles embed.FS
 ### WebSocket 连接管理
 
 ```
-useWebSocket hook:
+useWebSocket composable:
   - 组件挂载时自动连接
   - 断线指数退避自动重连
   - 离线期间消息队列缓冲
