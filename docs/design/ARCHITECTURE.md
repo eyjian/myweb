@@ -1,117 +1,117 @@
-# myweb Architecture Design
+# myweb 架构设计
 
-## Overview
+## 概述
 
-**myweb** is a browser-based MySQL client that provides the same core experience as [mysh](https://github.com/eyjian/mysh) — SQL editing with syntax highlighting, auto-completion, and result display — through a web interface instead of a terminal.
+**myweb** 是一个基于浏览器的 MySQL 客户端，提供与 [mysh](https://github.com/eyjian/mysh) 一致的核心体验——SQL 编辑（语法高亮、自动补全、结果展示），但通过 Web 界面代替终端。
 
-Key principles:
-- **Single binary** — Go backend with embedded SPA frontend, same philosophy as mysh
-- **Local-first** — listens on `127.0.0.1` by default, no authentication required
-- **Code reuse** — shares `connection`, `metadata`, `executor`, `output`, `config` packages from mysh
+核心原则：
+- **单二进制** — Go 后端 + 嵌入式 SPA 前端，与 mysh 哲学一致
+- **本地优先** — 默认监听 `127.0.0.1`，无需认证
+- **代码复用** — 共享 mysh 的 `connection`、`metadata`、`executor`、`output`、`config` 包
 
-## Architecture
+## 架构
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Browser (SPA)                        │
+│                    浏览器 (SPA)                         │
 │  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌─────────────┐ │
-│  │ CodeMirror│ │ Result   │ │Sidebar │ │ History     │ │
-│  │ SQL Editor│ │ Table    │ │ DB/Browse│ │ Panel       │ │
+│  │ CodeMirror│ │ 结果     │ │侧边栏  │ │ 历史面板    │ │
+│  │ SQL 编辑器│ │ 表格     │ │数据库浏览│ │             │ │
 │  └─────┬─────┘ └────┬─────┘ └───┬────┘ └──────┬──────┘ │
 │        └────────┬────┘───────────┘─────────────┘        │
 │            HTTP REST + WebSocket                        │
 ├─────────────────────────────────────────────────────────┤
-│                  Go HTTP Server                         │
+│                  Go HTTP 服务器                         │
 │  ┌──────────┐ ┌───────────┐ ┌───────────────────────┐  │
-│  │ REST API │ │ WebSocket │ │ Static (embed.FS)     │  │
-│  │ Handler  │ │ Handler   │ │ ui/dist/              │  │
+│  │ REST API │ │ WebSocket │ │ 静态文件 (embed.FS)   │  │
+│  │ 处理器   │ │ 处理器    │ │ ui/dist/              │  │
 │  └────┬─────┘ └─────┬─────┘ └───────────────────────┘  │
 ├───────┴──────────────┴──────────────────────────────────┤
-│                Shared Packages (from mysh)              │
+│              共享包 (来自 mysh)                          │
 │  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌────────────┐  │
 │  │connection│ │ metadata │ │executor│ │  output     │  │
-│  │  pool    │ │  cache   │ │        │ │ formatter   │  │
+│  │  连接池  │ │ 元数据缓存│ │ 执行器 │ │ 格式化器    │  │
 │  └──────────┘ └──────────┘ └────────┘ └────────────┘  │
 │  ┌──────────┐                                           │
 │  │  config  │                                           │
 │  └──────────┘                                           │
 ├─────────────────────────────────────────────────────────┤
-│                    MySQL Server                         │
+│                    MySQL 服务器                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Project Structure
+## 项目结构
 
 ```
 myweb/
 ├── cmd/
-│   └── myweb/            # Entry point
+│   └── myweb/            # 入口
 │       └── main.go
 ├── server/
-│   ├── server.go         # HTTP server setup, embed.FS, routes
-│   ├── api.go            # REST API handlers
-│   ├── ws.go             # WebSocket handler
-│   └── middleware.go     # CORS, logging, recovery
+│   ├── server.go         # HTTP 服务器、embed.FS、路由
+│   ├── api.go            # REST API 处理器
+│   ├── ws.go             # WebSocket 处理器
+│   └── middleware.go     # CORS、日志、恢复
 ├── ui/
-│   ├── src/              # React frontend source
+│   ├── src/              # React 前端源码
 │   │   ├── App.tsx
 │   │   ├── components/
-│   │   │   ├── SqlEditor.tsx      # CodeMirror 6 wrapper
-│   │   │   ├── ResultTable.tsx    # Virtual-scroll result grid
-│   │   │   ├── Sidebar.tsx        # DB/table/column browser
-│   │   │   ├── ConnectDialog.tsx  # Connection modal
-│   │   │   ├── HistoryPanel.tsx   # Query history
-│   │   │   └── StatusBar.tsx      # Connection info + format toggle
+│   │   │   ├── SqlEditor.tsx      # CodeMirror 6 封装
+│   │   │   ├── ResultTable.tsx    # 虚拟滚动结果表格
+│   │   │   ├── Sidebar.tsx        # 数据库/表/列浏览器
+│   │   │   ├── ConnectDialog.tsx  # 连接对话框
+│   │   │   ├── HistoryPanel.tsx   # 查询历史面板
+│   │   │   └── StatusBar.tsx      # 连接信息 + 格式切换
 │   │   ├── hooks/
-│   │   │   ├── useWebSocket.ts    # WebSocket connection manager
-│   │   │   └── useApi.ts          # REST API helpers
+│   │   │   ├── useWebSocket.ts    # WebSocket 连接管理
+│   │   │   └── useApi.ts          # REST API 辅助
 │   │   └── index.tsx
-│   ├── dist/             # Build output (go:embed target)
+│   ├── dist/             # 构建产物 (go:embed 目标)
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── vite.config.ts
 ├── docs/
 │   └── design/
-│       └── ARCHITECTURE.md  # This file
+│       └── ARCHITECTURE.md  # 本文件
 ├── Makefile
 ├── install.sh
 ├── go.mod
 └── go.sum
 ```
 
-## Go Backend
+## Go 后端
 
-### Entry Point
+### 入口
 
-`cmd/myweb/main.go`:
-- Parse CLI flags: `-addr` (default `127.0.0.1:8080`), `-open` (auto-open browser), `-dsn` (initial connection)
-- Load config from `~/.myweb.yaml` (reuse mysh `config` package)
-- Create connection pool, metadata cache, executor (from mysh packages)
-- Start HTTP server with embedded SPA
-- Optionally open browser
+`cmd/myweb/main.go`：
+- 解析 CLI 参数：`-addr`（默认 `127.0.0.1:8080`）、`-open`（自动打开浏览器）、`-dsn`（初始连接）
+- 加载配置 `~/.myweb.yaml`（复用 mysh `config` 包）
+- 创建连接池、元数据缓存、执行器（来自 mysh 包）
+- 启动 HTTP 服务器，嵌入 SPA
+- 可选自动打开浏览器
 
 ### REST API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/status` | Connection status (host, db, user, server version, uptime) |
-| `POST` | `/api/connect` | Connect to database `{"dsn":"user:pass@tcp(host:port)/db"}` |
-| `POST` | `/api/reconnect` | Reconnect to current server |
-| `GET` | `/api/databases` | List all databases |
-| `GET` | `/api/tables?db=xxx` | List tables in a database |
-| `GET` | `/api/columns?table=xxx&db=xxx` | List columns for a table |
-| `POST` | `/api/query` | Execute a short query synchronously `{"sql":"SELECT ..."}` |
-| `POST` | `/api/export` | Export last result `{"format":"csv","path":"~/out.csv"}` |
-| `GET` | `/api/history` | Get query history (paginated) |
-| `GET` | `/api/aliases` | Get configured aliases |
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/status` | 连接状态（host、db、user、服务器版本、运行时长） |
+| `POST` | `/api/connect` | 连接数据库 `{"dsn":"user:pass@tcp(host:port)/db"}` |
+| `POST` | `/api/reconnect` | 重新连接当前服务器 |
+| `GET` | `/api/databases` | 列出所有数据库 |
+| `GET` | `/api/tables?db=xxx` | 列出指定数据库的表 |
+| `GET` | `/api/columns?table=xxx&db=xxx` | 列出指定表的列信息 |
+| `POST` | `/api/query` | 同步执行短查询 `{"sql":"SELECT ..."}` |
+| `POST` | `/api/export` | 导出最近一次查询结果 `{"format":"csv","path":"~/out.csv"}` |
+| `GET` | `/api/history` | 获取查询历史（分页） |
+| `GET` | `/api/aliases` | 获取配置的别名 |
 
-### WebSocket Protocol
+### WebSocket 协议
 
-Endpoint: `ws://localhost:8080/ws`
+端点：`ws://localhost:8080/ws`
 
-Used for long-running queries, streaming results, and watch mode.
+用于长查询、流式结果和 watch 模式。
 
-**Client → Server messages:**
+**客户端 → 服务端：**
 
 ```json
 {"type": "query", "sql": "SELECT * FROM users"}
@@ -120,7 +120,7 @@ Used for long-running queries, streaming results, and watch mode.
 {"type": "watch_stop"}
 ```
 
-**Server → Client messages:**
+**服务端 → 客户端：**
 
 ```json
 {"type": "result_start", "columns": ["id","name","email"], "format": "table"}
@@ -133,204 +133,204 @@ Used for long-running queries, streaming results, and watch mode.
 {"type": "disconnected"}
 ```
 
-Streaming `result_row` messages allow large result sets to render incrementally without waiting for the full query to complete.
+流式 `result_row` 消息允许大结果集逐步渲染，无需等待查询完全结束。
 
-### Static File Serving
+### 静态文件服务
 
-Frontend build output is embedded using `go:embed`:
+前端构建产物通过 `go:embed` 嵌入：
 
 ```go
 //go:embed ui/dist/*
 var staticFiles embed.FS
 ```
 
-Served at `/` with SPA fallback (unknown paths return `index.html` for client-side routing).
+挂载到 `/`，SPA fallback（未知路径返回 `index.html`，支持客户端路由）。
 
-## Frontend (React SPA)
+## 前端 (React SPA)
 
-### Tech Stack
+### 技术栈
 
-| Library | Purpose |
-|---------|---------|
-| React 19 | UI framework |
-| TypeScript | Type safety |
-| Vite | Build tool (fast HMR in dev) |
-| CodeMirror 6 | SQL editor with `@codemirror/lang-sql` |
-| @tanstack/react-table | Virtual-scroll result table |
-| Tailwind CSS | Styling |
+| 库 | 用途 |
+|----|------|
+| React 19 | UI 框架 |
+| TypeScript | 类型安全 |
+| Vite | 构建工具（开发时快速 HMR） |
+| CodeMirror 6 | SQL 编辑器，使用 `@codemirror/lang-sql` |
+| @tanstack/react-table | 虚拟滚动结果表格 |
+| Tailwind CSS | 样式 |
 
-### Page Layout
+### 页面布局
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  🔵 myweb    mydb@localhost:3306       [Connect]     │  ← Top bar
+│  🔵 myweb    mydb@localhost:3306       [连接]        │  ← 顶栏
 ├──────────┬───────────────────────────────────────────┤
 │          │  ┌─────────────────────────────────────┐  │
-│ Tables   │  │  SQL Editor (CodeMirror 6)         │  │
+│ 表列表   │  │  SQL 编辑器 (CodeMirror 6)          │  │
 │──────────│  │  SELECT * FROM users WHERE ...       │  │
 │ ▸ users  │  │                                     │  │
 │ ▸ orders │  └─────────────────────────────────────┘  │
-│ ▸ products│  [▶ Run]  [⏹ Cancel]  [📥 Export]        │  ← Action bar
+│ ▸ products│  [▶ 执行]  [⏹ 取消]  [📥 导出]          │  ← 操作栏
 │          │  ┌─────────────────────────────────────┐  │
-│ Columns  │  │  Results Table                      │  │
+│ 列信息   │  │  结果表格                            │  │
 │──────────│  │  id | name  | email                 │  │
 │ id  INT  │  │  1  | Alice | alice@...             │  │
 │ name VARC│  │  2  | Bob   | bob@...               │  │
 │ email VAR│  └─────────────────────────────────────┘  │
-│          │  2 rows in 0.03s  [Table|JSON|Markdown]   │  ← Status bar
+│          │  2 行, 耗时 0.03s  [表格|JSON|Markdown]   │  ← 状态栏
 └──────────┴───────────────────────────────────────────┘
 ```
 
-### Components
+### 组件
 
 #### SqlEditor (CodeMirror 6)
-- SQL syntax highlighting via `@codemirror/lang-sql`
-- Auto-completion: on `Ctrl+Space`, queries `/api/tables`, `/api/columns` for suggestions
-- Multi-line editing, bracket matching, auto-close brackets
-- Execute on `Ctrl+Enter` or `Cmd+Enter`
-- `\G`, `\j`, `\m` suffix support (same as mysh)
+- SQL 语法高亮（`@codemirror/lang-sql`）
+- 自动补全：`Ctrl+Space` 触发，从 `/api/tables`、`/api/columns` 获取建议
+- 多行编辑、括号匹配、自动闭合
+- `Ctrl+Enter` 或 `Cmd+Enter` 执行
+- 支持 `\G`、`\j`、`\m` 后缀（与 mysh 一致）
 
 #### ResultTable
-- Virtual scrolling for large result sets (only renders visible rows)
-- Column header click to sort (client-side)
-- Column width auto-fit with manual resize
-- NULL values displayed as dim italic `NULL` (consistent with mysh)
-- Format toggle: Table / JSON / Markdown tabs
+- 虚拟滚动：大结果集仅渲染可见行
+- 列头点击排序（客户端排序）
+- 列宽自动适配，支持手动拖拽
+- NULL 值显示为暗色斜体 `NULL`（与 mysh 一致）
+- 格式切换：表格 / JSON / Markdown 标签页
 
 #### Sidebar
-- Accordion sections: Databases → Tables → Columns
-- Single click on table/column name → insert into editor at cursor
-- Double click on table → auto-fill `SELECT * FROM table LIMIT 100`
-- Refresh button to reload metadata
+- 手风琴折叠：数据库 → 表 → 列
+- 单击表名/列名 → 插入到编辑器光标处
+- 双击表名 → 自动填充 `SELECT * FROM table LIMIT 100`
+- 刷新按钮重新加载元数据
 
 #### ConnectDialog
-- Modal with fields: Host, Port, User, Password, Database
-- Or paste a full DSN string
-- Save connection as session (stored in config)
+- 模态对话框：Host、Port、User、Password、Database 字段
+- 或直接粘贴 DSN 字符串
+- 保存为会话（存储在配置文件）
 
 #### HistoryPanel
-- Slide-out panel showing query history
-- Search/filter by keyword
-- Click to refill editor
+- 滑出面板，显示查询历史
+- 关键词搜索/过滤
+- 点击重填编辑器
 
 #### StatusBar
-- Connection indicator (green dot = connected, red = disconnected)
-- Current database and host
-- Last query row count and execution time
-- Output format toggle buttons
+- 连接指示器（绿点 = 已连接，红点 = 已断开）
+- 当前数据库和主机
+- 最近查询行数和耗时
+- 输出格式切换按钮
 
-### WebSocket Connection Management
+### WebSocket 连接管理
 
 ```
 useWebSocket hook:
-  - Auto-connect on mount
-  - Auto-reconnect with exponential backoff
-  - Message queue for offline period
-  - Parse streaming result_row → incremental table update
+  - 组件挂载时自动连接
+  - 断线指数退避自动重连
+  - 离线期间消息队列缓冲
+  - 流式 result_row → 增量更新表格
 ```
 
-## Security
+## 安全
 
-- **Default bind**: `127.0.0.1:8080` — localhost only
-- **No authentication** by default — local tool, same as mysh
-- **Optional token**: `--token` flag sets a Bearer token for API/WebSocket auth
-- **No CORS headers** for external origins (localhost only)
-- SQL injection: not applicable — user writes SQL directly, same as any DB client
+- **默认绑定**：`127.0.0.1:8080` — 仅本地访问
+- **默认无认证** — 本地工具，与 mysh 一致
+- **可选 Token**：`--token` 参数设置 Bearer token 用于 API/WebSocket 认证
+- **无 CORS 外部头** — 仅限 localhost
+- SQL 注入：不适用 — 用户直接编写 SQL，与任何数据库客户端相同
 
-## Shared Code from mysh
+## 共享 mysh 代码
 
-| Package | Usage in myweb |
-|---------|---------------|
-| `connection` | MySQL connection pool, reconnect, DB/table/column queries |
-| `metadata` | Schema cache (lazy refresh, dirty marking) |
-| `executor` | SQL execution, auto-reconnect retry, cancel support |
-| `output` | Result formatting (table/vertical/JSON/Markdown) |
-| `config` | Config file loading/saving, aliases, sessions |
-| `history` | Query history persistence |
+| 包 | myweb 中的用途 |
+|----|---------------|
+| `connection` | MySQL 连接池、重连、DB/表/列查询 |
+| `metadata` | Schema 缓存（延迟刷新、脏标记） |
+| `executor` | SQL 执行、自动重连重试、取消支持 |
+| `output` | 结果格式化（表格/垂直/JSON/Markdown） |
+| `config` | 配置文件加载/保存、别名、会话 |
+| `history` | 查询历史持久化 |
 
-Packages **not** shared:
-- `tui` — terminal-specific Bubble Tea model
-- `editor` — terminal line editor
-- `highlight` — ANSI terminal highlighting (frontend uses CodeMirror)
-- `completer` — terminal completion menu (frontend uses CodeMirror completion)
+**不共享的包**：
+- `tui` — 终端专属 Bubble Tea 模型
+- `editor` — 终端行编辑器
+- `highlight` — ANSI 终端高亮（前端用 CodeMirror）
+- `completer` — 终端补全菜单（前端用 CodeMirror 补全）
 
-## Development Workflow
+## 开发工作流
 
-### Local Development
+### 本地开发
 
 ```bash
-# Terminal 1: Start frontend dev server with HMR
+# 终端 1：启动前端开发服务器（HMR）
 cd ui && npm run dev
 
-# Terminal 2: Start Go backend with proxy to frontend
+# 终端 2：启动 Go 后端，代理到前端
 go run ./cmd/myweb --dev
 ```
 
-In `--dev` mode, the Go server proxies `/` requests to Vite dev server (default `http://localhost:5173`) instead of using embedded files.
+`--dev` 模式下，Go 服务器将 `/` 请求代理到 Vite 开发服务器（默认 `http://localhost:5173`），而非使用嵌入文件。
 
-### Production Build
+### 生产构建
 
 ```bash
-# Build frontend
+# 构建前端
 cd ui && npm run build   # → ui/dist/
 
-# Build Go binary (embeds ui/dist/)
+# 构建 Go 二进制（嵌入 ui/dist/）
 go build -o myweb ./cmd/myweb
 
-# Or via Makefile
+# 或通过 Makefile
 make build
 ```
 
-### Cross-compile
+### 交叉编译
 
 ```bash
 make cross-compile
-# Produces: myweb-linux-amd64, myweb-darwin-arm64, etc.
+# 产出：myweb-linux-amd64, myweb-darwin-arm64 等
 ```
 
-## CLI Flags
+## CLI 参数
 
 ```
-Usage: myweb [options] [dsn]
+用法：myweb [选项] [dsn]
 
-Options:
-  -addr string    Listen address (default "127.0.0.1:8080")
-  -open           Open browser automatically (default true)
-  -dev            Development mode (proxy to Vite)
-  -token string   Bearer token for API authentication
-  -config string  Config file path (default "~/.myweb.yaml")
-  -version        Show version
+选项：
+  -addr string    监听地址（默认 "127.0.0.1:8080"）
+  -open           自动打开浏览器（默认 true）
+  -dev            开发模式（代理到 Vite）
+  -token string   Bearer token 用于 API 认证
+  -config string  配置文件路径（默认 "~/.myweb.yaml"）
+  -version        显示版本号
 
-Arguments:
-  dsn             MySQL DSN to connect on startup (optional)
+参数：
+  dsn             启动时连接的 MySQL DSN（可选）
                   user:pass@tcp(host:port)/dbname
 ```
 
-## Configuration
+## 配置
 
-Config file: `~/.myweb.yaml` (compatible with mysh's `~/.mysh.yaml` format)
+配置文件：`~/.myweb.yaml`（与 mysh 的 `~/.mysh.yaml` 格式兼容）
 
 ```yaml
-# Connection defaults
+# 连接默认值
 host: "127.0.0.1"
 port: 3306
 user: "root"
 password: ""
 
-# Server settings
+# 服务器设置
 addr: "127.0.0.1:8080"
 open_browser: true
 
-# Display
+# 显示
 theme: "dark"              # dark / light
-page_size: 100             # Default result limit
-auto_vertical: false       # Auto-switch to vertical for wide results
+page_size: 100             # 默认结果限制
+auto_vertical: false       # 宽结果自动切换垂直格式
 
-# SQL aliases (shared with mysh)
+# SQL 别名（与 mysh 共享）
 aliases:
   top10: "SELECT * FROM users ORDER BY score DESC LIMIT 10"
 
-# Saved sessions (shared with mysh)
+# 保存的会话（与 mysh 共享）
 sessions:
   prod:
     host: "db.prod.example.com"
@@ -339,30 +339,30 @@ sessions:
     database: "myapp"
 ```
 
-## Phased Implementation Plan
+## 分阶段实现计划
 
-### Phase 1: Skeleton + Basic Query
-- Go HTTP server with embed.FS
-- WebSocket handler (query/cancel)
-- React scaffold + CodeMirror SQL editor
-- Result table (basic, no virtual scroll)
-- Connect dialog
+### Phase 1：骨架 + 基础查询
+- Go HTTP 服务器 + embed.FS
+- WebSocket 处理器（查询/取消）
+- React 脚手架 + CodeMirror SQL 编辑器
+- 结果表格（基础版，无虚拟滚动）
+- 连接对话框
 
-### Phase 2: Schema Browser + Completion
-- Sidebar with DB/table/column tree
-- CodeMirror auto-completion from metadata API
-- Double-click table → SELECT query
-- History panel
+### Phase 2：Schema 浏览 + 补全
+- 侧边栏数据库/表/列树
+- CodeMirror 自动补全（来自元数据 API）
+- 双击表名 → SELECT 查询
+- 历史面板
 
-### Phase 3: Advanced Features
-- Virtual scroll result table
-- Export to CSV/JSON/Markdown
-- Watch mode (periodic re-execute)
-- Format toggle (Table/JSON/Markdown)
-- Session management
+### Phase 3：高级功能
+- 虚拟滚动结果表格
+- 导出为 CSV/JSON/Markdown
+- Watch 模式（定期重执行）
+- 格式切换（表格/JSON/Markdown）
+- 会话管理
 
-### Phase 4: Polish
-- Dark/light theme
-- Keyboard shortcuts panel
-- install.sh + cross-compile
-- Config file sharing with mysh
+### Phase 4：打磨
+- 暗色/亮色主题
+- 快捷键面板
+- install.sh + 交叉编译
+- 配置文件与 mysh 共享
