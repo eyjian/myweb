@@ -146,7 +146,7 @@ var staticFiles embed.FS
 
 挂载到 `/`，SPA fallback（未知路径返回 `index.html`，支持客户端路由）。
 
-## 前端 (React SPA)
+## 前端 (Vue 3 SPA)
 
 ### 技术栈
 
@@ -344,7 +344,7 @@ sessions:
 ### Phase 1：骨架 + 基础查询
 - Go HTTP 服务器 + embed.FS
 - WebSocket 处理器（查询/取消）
-- React 脚手架 + CodeMirror SQL 编辑器
+- Vue 3 脚手架 + CodeMirror SQL 编辑器
 - 结果表格（基础版，无虚拟滚动）
 - 连接对话框
 
