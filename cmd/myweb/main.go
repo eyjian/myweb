@@ -12,6 +12,7 @@ import (
 	"mysh/executor"
 	"mysh/metadata"
 
+	myweb "github.com/eyjian/myweb"
 	"github.com/eyjian/myweb/server"
 )
 
@@ -66,6 +67,7 @@ func main() {
 		Pool:     pool,
 		Meta:     meta,
 		Executor: exec,
+		UIFiles:  myweb.UIFiles,
 	})
 
 	if *openBrowser && !*dev {
